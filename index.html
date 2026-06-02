@@ -184,7 +184,6 @@
   .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 36px #39d35370; }
 
   /* ── QUIZ PRINCIPAL ── */
-  #screen-quiz { display: none; }
   .question-meta {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 16px; font-size: .85rem;
@@ -255,7 +254,7 @@
   #feedback-box {
     margin-top: 18px; padding: 14px 18px;
     border-radius: var(--radius); font-weight: 700;
-    font-size: 1rem; display: none; animation: popIn .25s ease;
+    font-size: 1rem; animation: popIn .25s ease;
   }
   @keyframes popIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   #feedback-box.ok  { background: #39d35320; border: 2px solid var(--green); color: var(--green); }
@@ -265,7 +264,7 @@
     margin-top: 16px; background: var(--cyan); color: #000; border: none;
     border-radius: 50px; padding: 12px 32px; font-size: 1rem;
     font-weight: 900; cursor: pointer; font-family: var(--font-ui);
-    display: none; transition: transform .15s;
+    transition: transform .15s;
   }
   .btn-next:hover { transform: scale(1.04); }
 
@@ -283,7 +282,6 @@
   .ctrl-btn:disabled { opacity: .4; cursor: default; }
 
   /* ── MODO MEMÓRIA ── */
-  #screen-memory { display: none; }
   .memory-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -309,7 +307,6 @@
   .mem-card.matched .front { color: var(--green); }
 
   /* ── MODO CÓDIGO GENÉTICO ── */
-  #screen-code { display: none; }
   .codon-display {
     font-family: var(--font-code); font-size: clamp(2rem, 6vw, 3.5rem);
     letter-spacing: .15em; text-align: center; color: var(--green);
@@ -340,7 +337,7 @@
   .codon-opt.wrong-sel { background: var(--red); color: #fff; border-color: var(--red); }
 
   /* ── FIM DE JOGO ── */
-  #screen-result { display: none; text-align: center; }
+  #screen-result { text-align: center; }
   #screen-result h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
   .result-emoji { font-size: 4rem; margin: 16px 0; display: block; }
   .result-stats {
@@ -819,9 +816,9 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active'); btn.setAttribute('aria-selected','true');
     state.mode = btn.dataset.mode;
     hideAllScreens();
-    if(state.mode==='quiz')   { $('screen-intro').style.display=''; }
-    if(state.mode==='memory') { $('screen-memory').style.display=''; buildMemory(); }
-    if(state.mode==='code')   { $('screen-code').style.display=''; startCodons(); }
+    if(state.mode==='quiz')   { $('screen-intro').style.display='block'; }
+    if(state.mode==='memory') { $('screen-memory').style.display='block'; buildMemory(); }
+    if(state.mode==='code')   { $('screen-code').style.display='block'; startCodons(); }
     announce('Modo '+btn.textContent.trim()+' selecionado');
   });
 });
@@ -839,7 +836,7 @@ function startQuiz(){
   state.qIndex = 0; state.points = 0; state.lives = 3; state.combo = 1;
   updateScoreboard();
   hideAllScreens();
-  $('screen-quiz').style.display='';
+  $('screen-quiz').style.display='block';
   loadQuestion();
 }
 
@@ -887,7 +884,7 @@ function selectAnswer(btn, isCorrect, q, e){
   allBtns.forEach(b=>b.disabled=true);
 
   const fb = $('feedback-box');
-  fb.style.display = '';
+  fb.style.display = 'block';
   if(isCorrect){
     btn.classList.add('correct');
     const pts = state.hintUsed ? 5 : (10 * state.combo);
@@ -913,7 +910,7 @@ function selectAnswer(btn, isCorrect, q, e){
     if(e) spawnParticle('💥', e.clientX, e.clientY);
     if(state.lives <= 0){ setTimeout(()=>showResult(true), 1800); return; }
   }
-  $('btn-next').style.display = '';
+  $('btn-next').style.display = 'block';
   $('btn-next').focus();
 }
 
@@ -927,7 +924,7 @@ $('btn-start-quiz').addEventListener('click', startQuiz);
 $('btn-hint').addEventListener('click',()=>{
   const q = state.questions[state.qIndex];
   $('hint-box').textContent = q.hint;
-  $('hint-box').style.display = '';
+  $('hint-box').style.display = 'block';
   $('btn-hint').disabled = true;
   state.hintUsed = true;
   speak('Dica: '+q.hint);
@@ -958,7 +955,7 @@ function updateScoreboard(){
 ════════════════════════ */
 function showResult(dead=false){
   hideAllScreens();
-  $('screen-result').style.display='';
+  $('screen-result').style.display='block';
   const pct = Math.round((state.points/(10*10*5))*100);
   let emoji='🏆', msg='Incrível! Você domina Bio+Info!';
   if(dead||state.points<30){ emoji='🌱'; msg='Continue tentando! Cada erro é aprendizado.'; }
@@ -1104,7 +1101,7 @@ function selectCodon(ok, c, btn){
     speak(`Errou. O correto é: ${c.aa}`);
     announce(`Errou. A resposta correta era ${c.aa}`);
   }
-  $('btn-next-codon').style.display='';
+  $('btn-next-codon').style.display='block';
   $('btn-next-codon').focus();
 }
 $('btn-next-codon').addEventListener('click',()=>{ state.codonIdx++; loadCodon(); });
