@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Célula Digital – Biologia & Informática</title>
+<meta name="description" content="Jogo educativo acessível que une biologia e informática para estudantes do ensino médio">
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ── VARIÁVEIS & RESET ── */
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --green:     #39d353;
+    --cyan:      #58e6d9;
+    --amber:     #f7c948;
+    --red:       #ff6b6b;
+    --blue:      #79c0ff;
+    --purple:    #bc8cff;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --radius:    16px;
+    --focus-ring: 0 0 0 4px var(--amber);
+    --font-ui:   'Nunito', sans-serif;
+    --font-code: 'Space Mono', monospace;
+  }
+
+  /* HIGH CONTRAST MODE (prefers-contrast) */
+  @media (prefers-contrast: high) {
+    :root {
+      --bg: #000; --surface: #111; --border: #fff;
+      --text: #fff; --muted: #ddd;
+      --green: #0f0; --cyan: #0ff; --amber: #ff0;
+    }
+  }
+
+  /* LIGHT MODE opt-in via botão */
+  body.light-mode {
+    --bg: #f0f6ff; --surface: #fff; --border: #ccd0d8;
+    --text: #1a2233; --muted: #5a6577;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: clamp(16px, 2vw, 20px);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* FOCO ACESSÍVEL: nunca remover outline */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius);
+  }
+
+  /* SKIP LINK para leitores de tela */
+  .skip-link {
+    position: absolute; top: -100px; left: 8px; z-index: 9999;
+    background: var(--amber); color: #000; padding: 8px 16px;
+    border-radius: 8px; font-weight: 700; text-decoration: none;
+    transition: top .2s;
+  }
+  .skip-link:focus { top: 8px; }
+
+  /* ── PAINEL DE ACESSIBILIDADE ── */
+  #a11y-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: var(--surface); border-bottom: 2px solid var(--border);
+    padding: 6px 16px; display: flex; gap: 8px; align-items: center;
+    z-index: 1000; flex-wrap: wrap;
+  }
+  #a11y-bar span { font-size: .75rem; color: var(--muted); margin-right: 4px; }
+  .a11y-btn {
+    background: var(--bg); border: 2px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 4px 12px;
+    font-size: .8rem; font-family: var(--font-ui); cursor: pointer;
+    font-weight: 700; transition: all .15s;
+  }
+  .a11y-btn:hover, .a11y-btn:focus-visible {
+    border-color: var(--cyan); color: var(--cyan);
+  }
+  .a11y-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+  #font-size-display {
+    font-size: .8rem; color: var(--muted); min-width: 2.5rem; text-align: center;
+  }
+
+  /* ── WRAPPER PRINCIPAL ── */
+  #app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 70px 16px 40px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 32px 0 24px;
+  }
+  .logo-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #1a2a1a, #1a1a2e);
+    border: 2px solid var(--green);
+    border-radius: 50px; padding: 6px 20px;
+    font-family: var(--font-code); font-size: .85rem;
+    color: var(--green); margin-bottom: 16px;
+    letter-spacing: .05em;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900; line-height: 1.15;
+    background: linear-gradient(90deg, var(--cyan), var(--green), var(--cyan));
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+  }
+  @keyframes shimmer { to { background-position: 200% center; } }
+  .subtitle {
+    color: var(--muted); font-size: 1rem; margin-top: 8px;
+  }
+
+  /* ── PLACAR ── */
+  #scoreboard {
+    display: flex; gap: 12px; justify-content: center;
+    flex-wrap: wrap; margin: 24px 0;
+  }
+  .score-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 12px 24px; text-align: center;
+    min-width: 100px;
+  }
+  .score-card .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .score-card .value { font-size: 1.8rem; font-weight: 900; font-family: var(--font-code); }
+  .score-card.points .value { color: var(--green); }
+  .score-card.level .value  { color: var(--cyan); }
+  .score-card.lives .value  { color: var(--red); }
+  .score-card.combo .value  { color: var(--amber); }
+
+  /* ── ABAS DOS MODOS DE JOGO ── */
+  #mode-tabs {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .tab-btn {
+    background: var(--surface); border: 2px solid var(--border);
+    color: var(--muted); border-radius: 50px; padding: 8px 22px;
+    font-size: .9rem; font-weight: 700; cursor: pointer;
+    transition: all .2s; font-family: var(--font-ui);
+  }
+  .tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .tab-btn.active { background: var(--cyan); border-color: var(--cyan); color: #000; }
+  .tab-btn .icon { margin-right: 6px; }
+
+  /* ── ÁREA DO JOGO ── */
+  #game-area {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    min-height: 340px;
+    position: relative;
+  }
+
+  /* ── TELA INICIAL ── */
+  #screen-intro { text-align: center; }
+  #screen-intro h2 { font-size: 1.6rem; color: var(--cyan); margin-bottom: 12px; }
+  #screen-intro p { color: var(--muted); max-width: 540px; margin: 0 auto 24px; }
+  .btn-start {
+    background: var(--green); color: #000; border: none;
+    border-radius: 50px; padding: 14px 36px; font-size: 1.1rem;
+    font-weight: 900; cursor: pointer; font-family: var(--font-ui);
+    box-shadow: 0 0 24px #39d35340;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 36px #39d35370; }
+
+  /* ── QUIZ PRINCIPAL ── */
+  #screen-quiz { display: none; }
+  .question-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; font-size: .85rem;
+  }
+  .q-badge {
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: 8px; padding: 4px 12px;
+    font-family: var(--font-code); color: var(--muted);
+  }
+  .q-category {
+    font-size: .8rem; color: var(--purple); font-weight: 700;
+    background: #bc8cff22; border-radius: 20px; padding: 2px 12px;
+  }
+  .progress-bar-wrap {
+    background: var(--bg); border-radius: 4px; height: 6px; margin-bottom: 20px;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  #progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green));
+    transition: width .4s ease; border-radius: 4px;
+  }
+  #question-text {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 700; line-height: 1.5; margin-bottom: 20px;
+    color: var(--text);
+  }
+  #hint-box {
+    background: #f7c94820; border: 1px solid var(--amber);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
+    font-size: .9rem; color: var(--amber); display: none;
+  }
+  #hint-box::before { content: '💡 Dica: '; font-weight: 700; }
+
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 520px) { .answers-grid { grid-template-columns: 1fr; } }
+
+  .answer-btn {
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px;
+    text-align: left; cursor: pointer; font-size: 1rem;
+    font-family: var(--font-ui); color: var(--text);
+    transition: all .2s; position: relative;
+    display: flex; align-items: flex-start; gap: 10px;
+    line-height: 1.45;
+  }
+  .answer-btn .letter {
+    background: var(--border); border-radius: 6px;
+    width: 28px; height: 28px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-code); font-size: .85rem; font-weight: 700;
+  }
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--cyan); color: var(--cyan); transform: translateY(-2px);
+    box-shadow: 0 4px 16px #58e6d920;
+  }
+  .answer-btn:hover:not(:disabled) .letter { background: var(--cyan); color: #000; }
+  .answer-btn.correct  { border-color: var(--green); background: #39d35318; color: var(--green); }
+  .answer-btn.correct .letter { background: var(--green); color: #000; }
+  .answer-btn.wrong    { border-color: var(--red); background: #ff6b6b18; color: var(--red); }
+  .answer-btn.wrong .letter { background: var(--red); color: #fff; }
+  .answer-btn:disabled { cursor: default; opacity: .75; transform: none !important; }
+
+  /* ── FEEDBACK ── */
+  #feedback-box {
+    margin-top: 18px; padding: 14px 18px;
+    border-radius: var(--radius); font-weight: 700;
+    font-size: 1rem; display: none; animation: popIn .25s ease;
+  }
+  @keyframes popIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #feedback-box.ok  { background: #39d35320; border: 2px solid var(--green); color: var(--green); }
+  #feedback-box.err { background: #ff6b6b20; border: 2px solid var(--red); color: var(--red); }
+
+  .btn-next {
+    margin-top: 16px; background: var(--cyan); color: #000; border: none;
+    border-radius: 50px; padding: 12px 32px; font-size: 1rem;
+    font-weight: 900; cursor: pointer; font-family: var(--font-ui);
+    display: none; transition: transform .15s;
+  }
+  .btn-next:hover { transform: scale(1.04); }
+
+  /* ── CONTROLES DE AJUDA ── */
+  #quiz-controls {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;
+  }
+  .ctrl-btn {
+    background: var(--bg); border: 2px solid var(--border);
+    color: var(--muted); border-radius: 8px; padding: 6px 14px;
+    font-size: .85rem; cursor: pointer; font-family: var(--font-ui); font-weight: 700;
+    transition: all .15s;
+  }
+  .ctrl-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .ctrl-btn:disabled { opacity: .4; cursor: default; }
+
+  /* ── MODO MEMÓRIA ── */
+  #screen-memory { display: none; }
+  .memory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-top: 8px;
+  }
+  @media (max-width: 480px) { .memory-grid { grid-template-columns: repeat(3, 1fr); } }
+  .mem-card {
+    aspect-ratio: 1; background: var(--bg);
+    border: 2px solid var(--border); border-radius: 12px;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: clamp(1.2rem, 3vw, 1.8rem);
+    transition: all .2s; user-select: none;
+    position: relative; overflow: hidden;
+  }
+  .mem-card .front { display: none; }
+  .mem-card .back  { font-size: 1.6rem; }
+  .mem-card.flipped .front { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; color: var(--text); text-align: center; padding: 4px; line-height: 1.2; }
+  .mem-card.flipped .back  { display: none; }
+  .mem-card:hover:not(.flipped):not(.matched) {
+    border-color: var(--cyan); transform: scale(1.04);
+  }
+  .mem-card.matched { border-color: var(--green); background: #39d35318; cursor: default; }
+  .mem-card.matched .front { color: var(--green); }
+
+  /* ── MODO CÓDIGO GENÉTICO ── */
+  #screen-code { display: none; }
+  .codon-display {
+    font-family: var(--font-code); font-size: clamp(2rem, 6vw, 3.5rem);
+    letter-spacing: .15em; text-align: center; color: var(--green);
+    background: var(--bg); border: 2px solid var(--border); border-radius: 12px;
+    padding: 20px; margin: 12px 0;
+  }
+  .codon-display span { display: inline-block; padding: 0 4px; }
+  .codon-display span:nth-child(1) { color: var(--cyan); }
+  .codon-display span:nth-child(2) { color: var(--amber); }
+  .codon-display span:nth-child(3) { color: var(--purple); }
+  .codon-input {
+    width: 100%; background: var(--bg); border: 2px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; color: var(--text);
+    font-family: var(--font-code); font-size: 1.1rem; text-align: center;
+    letter-spacing: .2em; text-transform: uppercase;
+    transition: border-color .2s;
+  }
+  .codon-input:focus { border-color: var(--cyan); outline: none; }
+  .codon-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+  .codon-opt {
+    background: var(--bg); border: 2px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 18px;
+    font-family: var(--font-code); font-size: 1rem; cursor: pointer;
+    transition: all .15s; font-weight: 700;
+  }
+  .codon-opt:hover { border-color: var(--green); color: var(--green); }
+  .codon-opt.selected { background: var(--green); color: #000; border-color: var(--green); }
+  .codon-opt.wrong-sel { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* ── FIM DE JOGO ── */
+  #screen-result { display: none; text-align: center; }
+  #screen-result h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
+  .result-emoji { font-size: 4rem; margin: 16px 0; display: block; }
+  .result-stats {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 20px 0;
+  }
+  .stat-pill {
+    background: var(--bg); border: 2px solid var(--border); border-radius: 50px;
+    padding: 8px 20px; font-size: .9rem;
+  }
+  .stat-pill span { font-weight: 900; color: var(--cyan); margin-right: 4px; }
+
+  /* ── LEITOR DE TELA: mensagens ao vivo ── */
+  #live-region {
+    position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;
+  }
+
+  /* ── RIBBON MOSTRA CIENTÍFICA ── */
+  .ribbon {
+    text-align: center; margin-top: 32px; padding: 14px;
+    border: 1px dashed var(--border); border-radius: 10px;
+    font-size: .82rem; color: var(--muted); line-height: 1.8;
+  }
+  .ribbon strong { color: var(--text); }
+
+  /* ── ALTO CONTRASTE BOTÃO ATIVO ── */
+  body.high-contrast {
+    --bg: #000; --surface: #111; --border: #fff;
+    --text: #fff; --muted: #ddd; --green: #0f0; --cyan: #0ff; --amber: #ff0;
+  }
+  body.dyslexia { font-family: 'Nunito', sans-serif; letter-spacing: .04em; word-spacing: .12em; line-height: 2; }
+  body.big-text { font-size: 22px; }
+
+  /* ── ANIMAÇÃO DE PARTÍCULA ── */
+  .particle {
+    position: fixed; pointer-events: none; z-index: 9998;
+    font-size: 1.5rem; animation: flyup 1s ease forwards;
+  }
+  @keyframes flyup {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to   { transform: translateY(-80px) scale(1.5); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+
+<div id="live-region" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<div id="a11y-bar" role="toolbar" aria-label="Opções de acessibilidade">
+  <span>Acessibilidade:</span>
+
+  <button class="a11y-btn" id="btn-contrast" aria-pressed="false" title="Alto contraste">⬛ Contraste</button>
+  <button class="a11y-btn" id="btn-light"    aria-pressed="false" title="Modo claro">☀️ Claro</button>
+  <button class="a11y-btn" id="btn-dyslexia" aria-pressed="false" title="Fonte dislexia">📖 Dislexia</button>
+  <button class="a11y-btn" id="btn-tts"      aria-pressed="false" title="Leitura em voz alta">🔊 Voz</button>
+
+  <div style="display:flex;align-items:center;gap:4px;margin-left:4px;">
+    <button class="a11y-btn" id="btn-font-down" aria-label="Diminuir texto">A−</button>
+    <div id="font-size-display" aria-live="polite">100%</div>
+    <button class="a11y-btn" id="btn-font-up"   aria-label="Aumentar texto">A+</button>
+  </div>
+
+  <button class="a11y-btn" id="btn-pause"   aria-pressed="false" title="Pausar animações">⏸ Pausar</button>
+</div>
+
+<div id="app">
+  <header role="banner">
+    <div class="logo-badge" aria-hidden="true">🧬 BIO + 💻 INFO</div>
+    <h1 id="main-content" tabindex="-1">Célula Digital</h1>
+    <p class="subtitle">Biologia &amp; Informática — Mostra Científica AEE</p>
+  </header>
+
+  <div id="scoreboard" role="status" aria-label="Placar do jogo">
+    <div class="score-card points">
+      <div class="label">Pontos</div>
+      <div class="value" id="score-pts" aria-live="polite">0</div>
+    </div>
+    <div class="score-card level">
+      <div class="label">Nível</div>
+      <div class="value" id="score-lvl">1</div>
+    </div>
+    <div class="score-card lives">
+      <div class="label">Vidas</div>
+      <div class="value" id="score-lives" aria-live="polite">❤️❤️❤️</div>
+    </div>
+    <div class="score-card combo">
+      <div class="label">Combo</div>
+      <div class="value" id="score-combo">×1</div>
+    </div>
+  </div>
+
+  <div id="mode-tabs" role="tablist" aria-label="Modos de jogo">
+    <button class="tab-btn active" role="tab" aria-selected="true"  data-mode="quiz"   id="tab-quiz">
+      <span class="icon" aria-hidden="true">🧠</span>Quiz Bio+Info
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-mode="memory" id="tab-memory">
+      <span class="icon" aria-hidden="true">🃏</span>Memória Celular
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-mode="code"   id="tab-code">
+      <span class="icon" aria-hidden="true">🔬</span>Código Genético
+    </button>
+  </div>
+
+  <main id="game-area" aria-label="Área de jogo">
+
+    <section id="screen-intro" aria-labelledby="intro-title">
+      <h2 id="intro-title">Pronto para jogar?</h2>
+      <p>Responda perguntas que misturam <strong>biologia celular</strong> com <strong>lógica de computadores</strong>. 
+         Cada nível fica mais desafiador. Use as dicas quando precisar! 🎯</p>
+      <p style="color:var(--amber);font-size:.9rem;margin-bottom:20px;">
+        🔊 Ative "Voz" na barra de acessibilidade para ouvir as perguntas.<br>
+        Use <kbd>Tab</kbd> para navegar, <kbd>Enter</kbd> / <kbd>Espaço</kbd> para selecionar.
+      </p>
+      <button class="btn-start" id="btn-start-quiz" aria-label="Começar Quiz Biologia e Informática">
+        🚀 Começar!
+      </button>
+    </section>
+
+    <section id="screen-quiz" aria-labelledby="question-text" style="display:none">
+      <div class="question-meta">
+        <div class="q-badge" id="q-counter" aria-label="Pergunta atual">P 1 / 10</div>
+        <div class="q-category" id="q-category" aria-live="polite">Biologia</div>
+      </div>
+      <div class="progress-bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progress-bar-wrap" aria-label="Progresso do quiz">
+        <div id="progress-bar" style="width:0%"></div>
+      </div>
+      <p id="question-text" aria-live="polite"></p>
+      <div id="hint-box" role="note" aria-live="polite"></div>
+      <div class="answers-grid" id="answers-grid" role="group" aria-label="Opções de resposta"></div>
+      <div id="feedback-box" role="alert" aria-live="assertive"></div>
+      <button class="btn-next" id="btn-next" aria-label="Próxima pergunta">Próxima →</button>
+      <div id="quiz-controls">
+        <button class="ctrl-btn" id="btn-hint" aria-label="Ver dica desta pergunta">💡 Dica</button>
+        <button class="ctrl-btn" id="btn-read" aria-label="Ler pergunta em voz alta">🔊 Ler</button>
+        <button class="ctrl-btn" id="btn-skip" aria-label="Pular esta pergunta">⏭ Pular</button>
+      </div>
+    </section>
+
+    <section id="screen-memory" aria-labelledby="mem-title" style="display:none">
+      <h2 id="mem-title" style="color:var(--cyan);margin-bottom:4px;">Memória Celular</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">
+        Encontre os pares: organela ↔ função. Use Tab+Enter para jogar sem mouse.
+      </p>
+      <div class="memory-grid" id="memory-grid" role="grid" aria-label="Grade do jogo da memória"></div>
+      <button class="btn-start" id="btn-reset-mem" style="margin-top:18px;font-size:.9rem;padding:10px 24px;">
+        🔄 Novo Jogo
+      </button>
+    </section>
+
+    <section id="screen-code" aria-labelledby="code-title" style="display:none">
+      <h2 id="code-title" style="color:var(--green);margin-bottom:4px;">Código Genético</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:8px;">
+        Veja o códon de RNA e escolha o aminoácido correto!
+      </p>
+      <div class="codon-display" id="codon-display" aria-label="Códon de RNA" aria-live="polite">
+        <span>X</span><span>X</span><span>X</span>
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:12px;">
+        Esse códon codifica qual aminoácido?
+      </p>
+      <div class="codon-options" id="codon-options" role="group" aria-label="Opções de aminoácido"></div>
+      <div id="codon-feedback" role="alert" aria-live="assertive" style="margin-top:14px;text-align:center;font-weight:700;font-size:1.1rem;min-height:1.5em;"></div>
+      <button class="btn-start" id="btn-next-codon" style="margin-top:16px;font-size:.9rem;padding:10px 24px;display:none;">
+        Próximo Códon →
+      </button>
+    </section>
+
+    <section id="screen-result" aria-labelledby="result-title" style="display:none">
+      <span class="result-emoji" id="result-emoji" aria-hidden="true">🏆</span>
+      <h2 id="result-title" tabindex="-1">Parabéns!</h2>
+      <p id="result-msg" style="color:var(--muted);margin-bottom:16px;"></p>
+      <div class="result-stats" id="result-stats"></div>
+      <button class="btn-start" id="btn-restart" aria-label="Jogar novamente" style="margin-top:20px;">
+        🔄 Jogar Novamente
+      </button>
+    </section>
+
+  </main>
+
+  <footer class="ribbon" role="contentinfo">
+    <strong>Célula Digital</strong> — Projeto de Mostra Científica 🔬<br>
+    AEE · Ensino Médio 2º Ano · Biologia &amp; Informática<br>
+    <small style="font-size:.75rem">Funciona offline · Acessível (WCAG 2.1 AA) · Mobile &amp; Desktop</small>
+  </footer>
+</div>
+
+<script>
+/* ─────────────────────────────────
+   BASE DE DADOS DE PERGUNTAS
+   Categorias: bio, info, bio+info
+───────────────────────────────── */
+const QUESTIONS = [
+  /* BIO */
+  {
+    q: "Qual organela é chamada de 'usina de energia da célula'?",
+    opts: ["Mitocôndria","Núcleo","Ribossomo","Vacúolo"],
+    ans: 0, cat: "🧬 Biologia",
+    hint: "Pense em energia (ATP).",
+    explain: "A mitocôndria produz ATP através da respiração celular."
+  },
+  {
+    q: "Que molécula armazena as informações genéticas nos seres vivos?",
+    opts: ["Proteína","DNA","Glicose","Lipídeo"],
+    ans: 1, cat: "🧬 Biologia",
+    hint: "Ácido desoxirribonucleico.",
+    explain: "O DNA contém as instruções genéticas de todos os organismos."
+  },
+  {
+    q: "Quantas bases nitrogenadas existem no DNA?",
+    opts: ["2","3","4","6"],
+    ans: 2, cat: "🧬 Biologia",
+    hint: "A, T, C e G.",
+    explain: "Adenina, Timina, Citosina e Guanina — quatro bases no DNA."
+  },
+  {
+    q: "Qual processo transforma glicose em energia nas células?",
+    opts: ["Fotossíntese","Respiração celular","Tradução","Mitose"],
+    ans: 1, cat: "🧬 Biologia",
+    hint: "Acontece na mitocôndria.",
+    explain: "A respiração celular oxida a glicose produzindo ATP."
+  },
+  {
+    q: "O que é um gene?",
+    opts: [
+      "Uma proteína funcional",
+      "Uma célula reprodutora",
+      "Um segmento de DNA que codifica uma proteína",
+      "Um tipo de RNA"
+    ],
+    ans: 2, cat: "🧬 Biologia",
+    hint: "Segmento de DNA com instrução.",
+    explain: "Genes são trechos do DNA que contêm instruções para síntese de proteínas."
+  },
+  /* INFO */
+  {
+    q: "Em informática, o que significa 'bit'?",
+    opts: [
+      "Grupo de 8 bytes",
+      "Unidade mínima de informação: 0 ou 1",
+      "Um tipo de vírus de computador",
+      "Parte do processador"
+    ],
+    ans: 1, cat: "💻 Informática",
+    hint: "É a menor unidade de dado possível.",
+    explain: "Bit (binary digit) é 0 ou 1 — o alicerce de toda informação digital."
+  },
+  {
+    q: "O que é um algoritmo?",
+    opts: [
+      "Um programa antivírus",
+      "Um tipo de hardware",
+      "Sequência de passos para resolver um problema",
+      "Um cabo de rede"
+    ],
+    ans: 2, cat: "💻 Informática",
+    hint: "Receita de bolo: passo a passo.",
+    explain: "Algoritmo é um conjunto finito de instruções que resolve um problema."
+  },
+  {
+    q: "Quantos bits formam 1 byte?",
+    opts: ["4","8","16","2"],
+    ans: 1, cat: "💻 Informática",
+    hint: "Pense no número de letras em 'byte': 4... não, pense diferente!",
+    explain: "1 byte = 8 bits. É o padrão universal de agrupamento de dados."
+  },
+  {
+    q: "O que é 'armazenamento em nuvem'?",
+    opts: [
+      "Guardar dados em servidores remotos pela internet",
+      "Um tipo de RAM especial",
+      "Salvar arquivos em nuvens meteorológicas",
+      "Um processador dedicado"
+    ],
+    ans: 0, cat: "💻 Informática",
+    hint: "Remoto, pela internet.",
+    explain: "Nuvem (cloud) significa servidores remotos acessados via internet."
+  },
+  /* BIO + INFO */
+  {
+    q: "Em que sentido o DNA é parecido com o código binário (0 e 1) dos computadores?",
+    opts: [
+      "Ambos usam exatamente 2 símbolos para guardar informação",
+      "São feitos do mesmo material",
+      "Funcionam apenas em temperatura baixa",
+      "Ambos precisam de eletricidade"
+    ],
+    ans: 0, cat: "🧬💻 Bio+Info",
+    hint: "DNA usa 4 bases; computadores usam 2 dígitos — ambos codificam informação.",
+    explain: "Tanto o DNA (4 bases) quanto o computador (2 dígitos) usam símbolos discretos para armazenar e transmitir informação."
+  },
+  {
+    q: "Como chamamos o processo de 'ler' o DNA para produzir uma proteína — semelhante a executar um programa?",
+    opts: ["Mitose","Expressão gênica","Clonagem","Osmose"],
+    ans: 1, cat: "🧬💻 Bio+Info",
+    hint: "Gene → RNA → Proteína.",
+    explain: "A expressão gênica é como a célula 'executa' as instruções do DNA, assim como um computador executa um programa."
+  },
+  {
+    q: "O que é Bioinformática?",
+    opts: [
+      "Usar computadores para analisar dados biológicos como sequências de DNA",
+      "Criar vírus de computador baseados em vírus biológicos",
+      "Biologia dos computadores quânticos",
+      "Programação em laboratórios"
+    ],
+    ans: 0, cat: "🧬💻 Bio+Info",
+    hint: "Junção de biologia + computação.",
+    explain: "Bioinformática usa ferramentas computacionais para analisar sequências genômicas, estruturas proteicas e outros dados biológicos."
+  },
+  {
+    q: "Qual dessas afirmações compara melhor o núcleo da célula com a CPU do computador?",
+    opts: [
+      "Ambos controlam e coordenam as operações do sistema",
+      "Ambos armazenam energia",
+      "São feitos de silício",
+      "Ambos produzem calor apenas"
+    ],
+    ans: 0, cat: "🧬💻 Bio+Info",
+    hint: "Quem 'comanda' a célula? E o computador?",
+    explain: "O núcleo celular coordena as atividades da célula, assim como a CPU processa e controla as operações do computador."
+  },
+  {
+    q: "O que ribossomos e compiladores têm em comum?",
+    opts: [
+      "Ambos traduzem uma linguagem para outra (RNA→proteína / código→máquina)",
+      "São feitos de proteínas",
+      "Ficam no núcleo celular",
+      "Produzem energia"
+    ],
+    ans: 0, cat: "🧬💻 Bio+Info",
+    hint: "Tradução de uma 'linguagem' para outra.",
+    explain: "Ribossomos traduzem mRNA em proteínas; compiladores traduzem código-fonte em linguagem de máquina."
+  },
+  {
+    q: "Uma mutação no DNA é análoga a qual evento em programação?",
+    opts: [
+      "Um bug (erro) no código",
+      "Um comentário no código",
+      "A abertura de um arquivo",
+      "Uma impressão na tela"
+    ],
+    ans: 0, cat: "🧬💻 Bio+Info",
+    hint: "Erro inesperado que muda o resultado.",
+    explain: "Mutações alteram a sequência do DNA assim como bugs alteram o comportamento de um programa, muitas vezes causando erros."
+  }
+];
+
+/* ─────────────────────────────────
+   MEMÓRIA: pares organela ↔ função
+───────────────────────────────── */
+const MEM_PAIRS = [
+  { icon:"⚡", name:"Mitocôndria",   func:"Produz ATP (energia)" },
+  { icon:"🔵", name:"Núcleo",        func:"Controla a célula" },
+  { icon:"🏭", name:"Ribossomo",     func:"Fabrica proteínas" },
+  { icon:"🌿", name:"Cloroplasto",   func:"Faz fotossíntese" },
+  { icon:"📦", name:"Vacúolo",       func:"Armazena substâncias" },
+  { icon:"🛡️", name:"Membrana",      func:"Controla entrada e saída" },
+  { icon:"🔩", name:"Lisossomo",     func:"Digere resíduos" },
+  { icon:"🔗", name:"Retículo ER",   func:"Transporte intracelular" },
+];
+
+/* ─────────────────────────────────
+   CÓDIGO GENÉTICO (subset)
+───────────────────────────────── */
+const CODONS = [
+  { codon:"AUG", aa:"Metionina (início)",   wrong:["Valina","Lisina","Glicina"] },
+  { codon:"UAA", aa:"STOP (fim)",           wrong:["Prolina","Alanina","Arginina"] },
+  { codon:"UUU", aa:"Fenilalanina",         wrong:["Leucina","Serina","Tirosina"] },
+  { codon:"GGG", aa:"Glicina",             wrong:["Alanina","Valina","Prolina"] },
+  { codon:"GAA", aa:"Ácido Glutâmico",     wrong:["Asparagina","Lisina","Treonina"] },
+  { codon:"CCU", aa:"Prolina",             wrong:["Glicina","Leucina","Valina"] },
+  { codon:"ACU", aa:"Treonina",            wrong:["Serina","Cisteína","Metionina"] },
+  { codon:"CGU", aa:"Arginina",            wrong:["Histidina","Lisina","Glutamina"] },
+  { codon:"UAC", aa:"Tirosina",            wrong:["Triptofano","Fenilalanina","Serina"] },
+  { codon:"GUG", aa:"Valina",             wrong:["Leucina","Isoleucina","Metionina"] },
+];
+
+/* ════════════════════════
+   ESTADO GLOBAL
+════════════════════════ */
+let state = {
+  points: 0, level: 1, lives: 3, combo: 1,
+  qIndex: 0, usedHint: false, hintUsed: false,
+  questions: [], answered: false,
+  ttsOn: false, animsPaused: false,
+  fontSize: 100,
+  memFlipped: [], memMatched: [], memCards: [],
+  codonIdx: 0, codonOrder: [],
+  mode: 'quiz'
+};
+
+/* ════════════════════════
+   UTILITÁRIOS
+════════════════════════ */
+function $(id){ return document.getElementById(id); }
+function announce(msg){ $('live-region').textContent = ''; setTimeout(()=>{ $('live-region').textContent = msg; }, 50); }
+function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+function speak(text){
+  if(!state.ttsOn || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR'; u.rate = 0.92;
+  speechSynthesis.speak(u);
+}
+function spawnParticle(emoji, x, y){
+  const p = document.createElement('div');
+  p.className = 'particle'; p.textContent = emoji;
+  p.style.left = x+'px'; p.style.top = y+'px';
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(), 1100);
+}
+
+/* ════════════════════════
+   ACESSIBILIDADE UI
+════════════════════════ */
+let fontScale = 100;
+$('btn-contrast').addEventListener('click', function(){
+  document.body.classList.toggle('high-contrast');
+  const on = document.body.classList.contains('high-contrast');
+  this.setAttribute('aria-pressed', on);
+  this.classList.toggle('active', on);
+  if(on) document.body.classList.remove('light-mode');
+  announce(on ? 'Alto contraste ativado' : 'Alto contraste desativado');
+});
+$('btn-light').addEventListener('click', function(){
+  document.body.classList.toggle('light-mode');
+  const on = document.body.classList.contains('light-mode');
+  this.setAttribute('aria-pressed', on);
+  this.classList.toggle('active', on);
+  if(on) document.body.classList.remove('high-contrast');
+  announce(on ? 'Modo claro ativado' : 'Modo escuro ativado');
+});
+$('btn-dyslexia').addEventListener('click', function(){
+  document.body.classList.toggle('dyslexia');
+  const on = document.body.classList.contains('dyslexia');
+  this.setAttribute('aria-pressed', on);
+  this.classList.toggle('active', on);
+  announce(on ? 'Fonte para dislexia ativada' : 'Fonte padrão restaurada');
+});
+$('btn-tts').addEventListener('click', function(){
+  state.ttsOn = !state.ttsOn;
+  this.setAttribute('aria-pressed', state.ttsOn);
+  this.classList.toggle('active', state.ttsOn);
+  announce(state.ttsOn ? 'Leitura em voz alta ativada' : 'Leitura em voz alta desativada');
+  if(state.ttsOn) speak('Leitura em voz alta ativada. Pressione o botão Ler nas perguntas para ouvir o texto.');
+});
+$('btn-font-up').addEventListener('click', ()=>{
+  fontScale = Math.min(fontScale+10, 160);
+  document.body.style.fontSize = fontScale+'%';
+  $('font-size-display').textContent = fontScale+'%';
+  announce('Tamanho do texto: '+fontScale+'%');
+});
+$('btn-font-down').addEventListener('click', ()=>{
+  fontScale = Math.max(fontScale-10, 80);
+  document.body.style.fontSize = fontScale+'%';
+  $('font-size-display').textContent = fontScale+'%';
+  announce('Tamanho do texto: '+fontScale+'%');
+});
+$('btn-pause').addEventListener('click', function(){
+  state.animsPaused = !state.animsPaused;
+  document.documentElement.style.setProperty('--shimmer-play', state.animsPaused ? 'paused' : 'running');
+  if(state.animsPaused) document.querySelectorAll('*').forEach(el=>el.style.animationPlayState='paused');
+  else document.querySelectorAll('*').forEach(el=>el.style.animationPlayState='');
+  this.setAttribute('aria-pressed', state.animsPaused);
+  this.classList.toggle('active', state.animsPaused);
+  announce(state.animsPaused ? 'Animações pausadas' : 'Animações ativas');
+});
+
+/* ════════════════════════
+   TABS / MODOS
+════════════════════════ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+    btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+    state.mode = btn.dataset.mode;
+    hideAllScreens();
+    if(state.mode==='quiz')   { $('screen-intro').style.display=''; }
+    if(state.mode==='memory') { $('screen-memory').style.display=''; buildMemory(); }
+    if(state.mode==='code')   { $('screen-code').style.display=''; startCodons(); }
+    announce('Modo '+btn.textContent.trim()+' selecionado');
+  });
+});
+function hideAllScreens(){
+  ['screen-intro','screen-quiz','screen-memory','screen-code','screen-result'].forEach(id=>{
+    $(id).style.display='none';
+  });
+}
+
+/* ════════════════════════
+   QUIZ
+════════════════════════ */
+function startQuiz(){
+  state.questions = shuffle([...QUESTIONS]).slice(0, 10);
+  state.qIndex = 0; state.points = 0; state.lives = 3; state.combo = 1;
+  updateScoreboard();
+  hideAllScreens();
+  $('screen-quiz').style.display='';
+  loadQuestion();
+}
+
+function loadQuestion(){
+  if(state.qIndex >= state.questions.length){ showResult(); return; }
+  const q = state.questions[state.qIndex];
+  state.answered = false; state.hintUsed = false;
+
+  $('q-counter').textContent = `P ${state.qIndex+1} / ${state.questions.length}`;
+  $('q-category').textContent = q.cat;
+  $('q-counter').setAttribute('aria-label', `Pergunta ${state.qIndex+1} de ${state.questions.length}`);
+  $('progress-bar').style.width = ((state.qIndex/state.questions.length)*100)+'%';
+  $('progress-bar-wrap').setAttribute('aria-valuenow', Math.round((state.qIndex/state.questions.length)*100));
+  $('question-text').textContent = q.q;
+  $('hint-box').style.display = 'none';
+  $('feedback-box').style.display = 'none';
+  $('btn-next').style.display = 'none';
+  $('btn-hint').disabled = false;
+
+  const grid = $('answers-grid'); grid.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  // Embaralhar opções mantendo rastreio da correta
+  const opts = q.opts.map((o,i)=>({text:o, orig:i}));
+  shuffle(opts);
+  const newAns = opts.findIndex(o=>o.orig===q.ans);
+
+  opts.forEach((o,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.setAttribute('aria-label', `Opção ${letters[i]}: ${o.text}`);
+    btn.innerHTML = `<span class="letter" aria-hidden="true">${letters[i]}</span><span>${o.text}</span>`;
+    btn.addEventListener('click', (e)=>selectAnswer(btn, o.orig===q.ans, q, e));
+    grid.appendChild(btn);
+  });
+
+  if(state.ttsOn) speak(`Pergunta ${state.qIndex+1}. ${q.cat}. ${q.q}`);
+  announce(`Pergunta ${state.qIndex+1} de ${state.questions.length}. ${q.q}`);
+  grid.children[0]?.focus();
+}
+
+function selectAnswer(btn, isCorrect, q, e){
+  if(state.answered) return;
+  state.answered = true;
+  const allBtns = $('answers-grid').querySelectorAll('button');
+  allBtns.forEach(b=>b.disabled=true);
+
+  const fb = $('feedback-box');
+  fb.style.display = '';
+  if(isCorrect){
+    btn.classList.add('correct');
+    const pts = state.hintUsed ? 5 : (10 * state.combo);
+    state.points += pts; state.combo = Math.min(state.combo+1, 5);
+    updateScoreboard();
+    fb.className = 'feedback-box ok';
+    fb.textContent = `✅ Correto! +${pts} pts. ${q.explain}`;
+    speak(`Correto! ${q.explain}`);
+    announce(`Correto! Você ganhou ${pts} pontos. ${q.explain}`);
+    if(e) spawnParticle('⭐', e.clientX, e.clientY);
+    if(state.combo>1 && e) spawnParticle(`×${state.combo}`, e.clientX+20, e.clientY-20);
+    checkLevelUp();
+  } else {
+    btn.classList.add('wrong');
+    // Mostra a correta
+    allBtns.forEach(b=>{ if(b.querySelector('span:last-child').textContent === q.opts[q.ans]) b.classList.add('correct'); });
+    state.lives = Math.max(state.lives-1, 0); state.combo = 1;
+    updateScoreboard();
+    fb.className = 'feedback-box err';
+    fb.textContent = `❌ Errou. A resposta certa era: "${q.opts[q.ans]}". ${q.explain}`;
+    speak(`Errou. A resposta certa era ${q.opts[q.ans]}. ${q.explain}`);
+    announce(`Errou. Resposta correta: ${q.opts[q.ans]}. ${q.explain}`);
+    if(e) spawnParticle('💥', e.clientX, e.clientY);
+    if(state.lives <= 0){ setTimeout(()=>showResult(true), 1800); return; }
+  }
+  $('btn-next').style.display = '';
+  $('btn-next').focus();
+}
+
+function checkLevelUp(){
+  const newLevel = Math.floor(state.points/50)+1;
+  if(newLevel > state.level){ state.level = newLevel; announce(`🎉 Você subiu para o Nível ${state.level}!`); }
+}
+
+$('btn-next').addEventListener('click',()=>{ state.qIndex++; loadQuestion(); });
+$('btn-start-quiz').addEventListener('click', startQuiz);
+$('btn-hint').addEventListener('click',()=>{
+  const q = state.questions[state.qIndex];
+  $('hint-box').textContent = q.hint;
+  $('hint-box').style.display = '';
+  $('btn-hint').disabled = true;
+  state.hintUsed = true;
+  speak('Dica: '+q.hint);
+  announce('Dica: '+q.hint);
+});
+$('btn-read').addEventListener('click',()=>{
+  const q = state.questions[state.qIndex];
+  speak(q.q);
+  announce('Lendo pergunta: '+q.q);
+});
+$('btn-skip').addEventListener('click',()=>{
+  state.qIndex++; state.combo=1; loadQuestion();
+  announce('Pergunta pulada');
+});
+
+/* ════════════════════════
+   PLACAR
+════════════════════════ */
+function updateScoreboard(){
+  $('score-pts').textContent = state.points;
+  $('score-lvl').textContent = state.level;
+  $('score-lives').textContent = '❤️'.repeat(state.lives) + '🖤'.repeat(3-state.lives);
+  $('score-combo').textContent = '×'+state.combo;
+}
+
+/* ════════════════════════
+   RESULTADO FINAL
+════════════════════════ */
+function showResult(dead=false){
+  hideAllScreens();
+  $('screen-result').style.display='';
+  const pct = Math.round((state.points/(10*10*5))*100);
+  let emoji='🏆', msg='Incrível! Você domina Bio+Info!';
+  if(dead||state.points<30){ emoji='🌱'; msg='Continue tentando! Cada erro é aprendizado.'; }
+  else if(state.points<60){ emoji='⭐'; msg='Muito bom! Quase lá!'; }
+  $('result-emoji').textContent = emoji;
+  $('result-msg').textContent = msg;
+  $('result-stats').innerHTML = `
+    <div class="stat-pill"><span>${state.points}</span>pontos</div>
+    <div class="stat-pill"><span>${state.level}</span>nível máx</div>
+    <div class="stat-pill"><span>${state.lives}</span>vidas restantes</div>
+    <div class="stat-pill"><span>${state.qIndex}/${state.questions.length}</span>respondidas</div>
+  `;
+  speak(`${msg} Você fez ${state.points} pontos, nível ${state.level}.`);
+  announce(`Fim de jogo! ${msg} Pontuação: ${state.points} pontos.`);
+  $('result-title').focus();
+}
+$('btn-restart').addEventListener('click',()=>{
+  state.level=1; startQuiz();
+});
+
+/* ════════════════════════
+   MEMÓRIA CELULAR
+════════════════════════ */
+function buildMemory(){
+  const grid = $('memory-grid'); grid.innerHTML='';
+  const pairs = shuffle([...MEM_PAIRS]).slice(0,6);
+  const cards = [];
+  pairs.forEach((p,i)=>{
+    cards.push({ id:i*2,   pairId:i, type:'organela', icon:p.icon, text:p.name });
+    cards.push({ id:i*2+1, pairId:i, type:'funcao',   icon:'🔬',   text:p.func });
+  });
+  shuffle(cards);
+  state.memCards = cards; state.memFlipped=[]; state.memMatched=[];
+
+  cards.forEach((c,idx)=>{
+    const el = document.createElement('div');
+    el.className='mem-card';
+    el.setAttribute('role','button');
+    el.setAttribute('tabindex','0');
+    el.setAttribute('aria-label', `Carta ${idx+1} de ${cards.length}, virada para baixo`);
+    el.setAttribute('data-idx', idx);
+    el.innerHTML = `<span class="front" aria-hidden="true">${c.icon}<br><small>${c.text}</small></span><span class="back" aria-hidden="true">❓</span>`;
+    el.addEventListener('click', ()=>flipCard(idx));
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flipCard(idx); }});
+    grid.appendChild(el);
+  });
+  announce('Jogo da memória iniciado com '+cards.length+' cartas. Use Tab para navegar e Enter para virar.');
+}
+
+function flipCard(idx){
+  if(state.memFlipped.length>=2) return;
+  if(state.memMatched.includes(idx)||state.memFlipped.includes(idx)) return;
+
+  const c = state.memCards[idx];
+  const el = $('memory-grid').children[idx];
+  el.classList.add('flipped');
+  el.setAttribute('aria-label', `${c.type==='organela'?'Organela':'Função'}: ${c.text}`);
+  speak(`${c.text}`);
+  state.memFlipped.push(idx);
+
+  if(state.memFlipped.length===2){
+    const [a,b] = state.memFlipped;
+    const ca = state.memCards[a], cb = state.memCards[b];
+    if(ca.pairId===cb.pairId){
+      // MATCH
+      setTimeout(()=>{
+        [a,b].forEach(i=>{ $('memory-grid').children[i].classList.add('matched'); });
+        state.memMatched.push(a,b);
+        state.points += 15*state.combo; state.combo=Math.min(state.combo+1,5);
+        updateScoreboard();
+        announce(`Par encontrado! ${MEM_PAIRS[ca.pairId].name} — ${MEM_PAIRS[ca.pairId].func}. +15 pontos.`);
+        speak(`Correto! ${MEM_PAIRS[ca.pairId].name} produz ${MEM_PAIRS[ca.pairId].func}`);
+        state.memFlipped=[];
+        if(state.memMatched.length===state.memCards.length){
+          setTimeout(()=>{ announce('Parabéns! Você encontrou todos os pares!'); speak('Parabéns! Você encontrou todos os pares!'); }, 400);
+        }
+      }, 600);
+    } else {
+      // MISMATCH
+      setTimeout(()=>{
+        [a,b].forEach(i=>{
+          const el2 = $('memory-grid').children[i];
+          el2.classList.remove('flipped');
+          el2.setAttribute('aria-label', `Carta ${i+1}, virada para baixo`);
+        });
+        state.combo=1; updateScoreboard();
+        announce('Não é um par. Tente novamente.');
+        state.memFlipped=[];
+      }, 900);
+    }
+  }
+}
+$('btn-reset-mem').addEventListener('click',()=>{ buildMemory(); state.combo=1; updateScoreboard(); });
+
+/* ════════════════════════
+   CÓDIGO GENÉTICO
+════════════════════════ */
+function startCodons(){
+  state.codonOrder = shuffle([...CODONS]);
+  state.codonIdx = 0;
+  loadCodon();
+}
+
+function loadCodon(){
+  if(state.codonIdx >= state.codonOrder.length){ state.codonIdx=0; }
+  const c = state.codonOrder[state.codonIdx];
+  const letters = c.codon.split('');
+  $('codon-display').innerHTML = letters.map(l=>`<span>${l}</span>`).join('');
+  $('codon-display').setAttribute('aria-label', `Códon: ${c.codon}, ${letters.join(' ')}`);
+
+  // Opções embaralhadas
+  const opts = shuffle([c.aa, ...c.wrong]);
+  const div = $('codon-options'); div.innerHTML='';
+  opts.forEach(o=>{
+    const btn = document.createElement('button');
+    btn.className='codon-opt';
+    btn.textContent=o;
+    btn.setAttribute('aria-label', `Aminoácido: ${o}`);
+    btn.addEventListener('click',()=>selectCodon(o===c.aa, c, btn));
+    div.appendChild(btn);
+  });
+  $('codon-feedback').textContent='';
+  $('btn-next-codon').style.display='none';
+
+  speak(`Códon de RNA: ${c.codon}. ${letters[0]}, ${letters[1]}, ${letters[2]}. Qual aminoácido?`);
+  announce(`Códon ${c.codon}. Qual aminoácido ele codifica?`);
+}
+
+function selectCodon(ok, c, btn){
+  $('codon-options').querySelectorAll('button').forEach(b=>b.disabled=true);
+  if(ok){
+    btn.classList.add('selected');
+    $('codon-feedback').style.color='var(--green)';
+    $('codon-feedback').textContent=`✅ Correto! ${c.codon} → ${c.aa}`;
+    state.points+=12; updateScoreboard();
+    speak(`Correto! ${c.codon} codifica ${c.aa}`);
+    announce(`Correto! ${c.codon} codifica ${c.aa}`);
+  } else {
+    btn.classList.add('wrong-sel');
+    $('codon-options').querySelectorAll('button').forEach(b=>{ if(b.textContent===c.aa) b.classList.add('selected'); });
+    $('codon-feedback').style.color='var(--red)';
+    $('codon-feedback').textContent=`❌ Errou. ${c.codon} → ${c.aa}`;
+    speak(`Errou. O correto é: ${c.aa}`);
+    announce(`Errou. A resposta correta era ${c.aa}`);
+  }
+  $('btn-next-codon').style.display='';
+  $('btn-next-codon').focus();
+}
+$('btn-next-codon').addEventListener('click',()=>{ state.codonIdx++; loadCodon(); });
+
+/* ════════════════════════
+   TECLADO GLOBAL
+════════════════════════ */
+document.addEventListener('keydown', e=>{
+  // Atalho: H = dica, R = ler, N = próxima
+  if(e.altKey){
+    if(e.key==='h'||e.key==='H'){ $('btn-hint')?.click(); }
+    if(e.key==='r'||e.key==='R'){ $('btn-read')?.click(); }
+    if(e.key==='n'||e.key==='N'){ if($('btn-next').style.display!=='none') $('btn-next').click(); }
+  }
+});
+
+/* ════════════════════════
+   INIT
+════════════════════════ */
+updateScoreboard();
+announce('Célula Digital carregado. Jogo educativo de Biologia e Informática. Selecione um modo de jogo e pressione Começar.');
+</script>
+</body>
+</html>
